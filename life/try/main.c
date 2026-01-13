@@ -1,131 +1,149 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "unistd.h"
+#include "stdio.h"
 
-int height;
-int width;
-int iterations;
 
-int **ft_alloc(void)
+int **map;
+
+void free_map(char **map)
 {
-    int **table = malloc(sizeof(int *) * height);
-    for (int i = 0; i < height; i++)
+    for(int i = 0; i < h; i++)
     {
-        table[i] = calloc(width, sizeof(int));
+            free(map[i])
     }
-    return (table);
+    free(map);
 }
 
-void ft_print(int **table)
+int create_map(int h, int w)
 {
-    for (int i = 0; i < height; i++)
+    map = malloc(sizeof(int) * h);
+    if(!map)
     {
-        for (int j = 0; j < width; j++)
+        free(map);
+        return -1;
+    }
+    for(int i = 0; i < h; i++)
+    {
+        for(int j = 0; j < w; j++)
+            map[i] = calloc(sizeof(int) * w);
+        if(!map[i])
+            return -1;
+    }
+    return 0;
+}
+
+void place_in_map()
+{
+    int i = 0;
+    int j = 0;
+    char c;
+    size_t red;
+    while(red = read(STDIN, &c, 1) > 0)
+    {
+        if(c == 'w')
+            i -= 1;
+        if(c == 's')
+            i += 1;
+        if(c == 'a')
+            j -= 1;
+        if(c == 'd')
+            j += 1;
+
+        if(c == 'x')
         {
-            if (table[i][j])
-                putchar('O');
-            else
-                putchar(' ');
+            if(map[i][j] == 0)
+                map[i][j] = 1;
+            if(map[i][j] == 1)
+                map[i][j] = 0;
         }
-        putchar('\n');
     }
 }
 
-void read_rules(int **table)
-{
-    int y = 0;
-    int x = 0;
-    int readed = 0;
-    int pen = 0;
-    char chr = 0;
-
-    while ((readed = read(0, &chr, 1)) > 0)
-    {
-        if (chr == 'w' && y > 0)
-            y--;
-        if (chr == 's' && y < height)
-            y++;
-        if (chr == 'd' && x < width)
-            x++;
-        if (chr == 'a' && x > 0)
-            x--;
-        if (chr == 'x')
-            pen = !pen;
-        if (pen)
-            table[y][x] = pen;
-    }
-}
-
-int alive(int **table, int y, int x)
-{
-    if (y < 0 || x < 0)
-        return (0);
-    if (y >= height || x >= width)
-        return (0);
-    if (table[y][x] == 1)
-        return (1);
-    return (0);
-}
-
-int count_neighboors(int **table, int y, int x)
+int count_neighboors(int i, int j)
 {
     int count = 0;
-
-    count += alive(table, y-1, x-1);
-    count += alive(table, y, x-1);
-    count += alive(table, y-1, x);
-
-    count += alive(table, y+1, x+1);
-    count += alive(table, y, x+1);
-    count += alive(table, y+1, x);
-
-    count += alive(table, y+1, x-1);
-    count += alive(table, y-1, x+1);
-    return (count);
+    if(map[i-1][j] == 1)
+        count++;
+    if(map[i+1][j] == 1)
+        count++;
+    if(map[i][j-1] == 1)
+        count++;
+    if(map[i][j+1] == 1)
+        count++;
+    // all 4 diagnals
+    if(map[i-1][j-1] == 1)
+        count++;
+    if(map[i-1][j+1] == 1)
+        count++;
+    if(map[i+1][j-1] == 1)
+        count++;
+    if(map[i+1][j+1] == 1)
+        count++;
+    
+    return(count);
 }
 
-void update_world(int **table, int **tmp_table)
+void die_or_stay(int i, int j)
 {
-    for (int y = 0; y < height; y++)
+    int count = count_neighboors(i, j);
+
+    if(count >= 2)
+        map[i][j] = 1;
+    if(count < 2)
+        map[i][j] = 0;
+}
+
+void live_or_stay(int i, int j)
+{
+    int count = count_neighboors(i, j);
+
+    if(count >= 3)
+        map[i][j] = 1;
+    if(count < 3)
+        map[i][j] = 0;
+}
+
+void solve_iteration(int iter)
+{
+    for(int i = 0; i < h; i++)
     {
-        for (int x = 0; x < width; x++)
+        for(int j = 0; j < w; j++)
         {
-            int neighboors = count_neighboors(table, y, x);
-            if (table[y][x] == 1)
-            {
-                if (neighboors == 2 || neighboors == 3)
-                    tmp_table[y][x] = 1;
-                else
-                    tmp_table[y][x] = 0;
-            }
-            else
-            {
-                if (neighboors == 3)
-                    tmp_table[y][x] = 1;
-                else
-                    tmp_table[y][x] = 0;
-            }
+             if((alive(map[i][j])) == 1)
+                die_or_stay(i, j);
+            if((alive(map[i][j])) == 0)
+                live_or_stay(map[i][j]);
         }
     }
 }
 
-int main(int argc, char **argv)
+void print_ans()
 {
-    if (argc != 4)
-        return (1);
-    width = atoi(argv[1]);
-    height = atoi(argv[2]);
-    iterations = atoi(argv[3]);
-    int **table = ft_alloc();
-    int **tmp_table = ft_alloc();
-    read_rules(table);
-    for (int i = 0; i < iterations; i++)
+    for(int i = 0; i < h; i++)
     {
-        update_world(table, tmp_table);
-        int **swp = table;
-        table = tmp_table;
-        tmp_table = swp;
+        for(int j = 0; j < w; j++)
+        {
+             if(map[i][j] == 1)
+                printf("0");
+            if(map[i][j] == 1)
+                printf(" ");
+        }
     }
-    ft_print(table);
-    return (0);
+}
+
+int main(int argc, char** argv)
+{
+    int h = atoi(argv[1]);
+    int w = atoi(argv[2]);
+    int n_iteration = atoi(argv[1]);
+
+    if(h > 0 && w > 0 && n_iteration > 0)
+        if(!(create_map(h, w)))
+            return -1;
+    if(!place_in_map())
+    for(int i =  0; i <= n_iteration; i++)
+    {
+        solve_iteration(n_iteration);
+    }
+    print_ans();
+    return(0);
 }
