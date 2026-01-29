@@ -1,155 +1,141 @@
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-int height;
-int width;
+int h;
+int w;
 int n_iteration;
 
-int **create_map()
+int **ft_alloc()
 {
-    int **tab = malloc(sizeof(int*) * height);
-    for(int i = 0; i < height; i++)
+    int **tab = malloc(sizeof(int *) * h);
+    for (int i = 0; i < h; i++)
     {
-        tab[i] = calloc(width, sizeof(int));
+        tab[i] = calloc(w, sizeof(int));
     }
     return tab;
 }
- void ft_print(int **tab)
- {
-    for(int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if(tab[i][j] == 1)
-                printf("O");
-            if(tab[i][j] == 0)
-                printf(" ");
-            if(j == width - 1)
-                printf("\n");
-        }
-    }
- }
 
-  void ft_print_tab(int **tab)
- {
-    for(int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            if(tab[i][j] == 1)
-                printf("1");
-            if(tab[i][j] == 0)
-                printf("0");
-            if(j == width - 1)
-                printf("\n");
-        }
-    }
- }
-
- int alive(int **tab, int i, int j)
- {
-    if(i < 0 || j < 0)
-        return 0;
-    
-    if(i > (height - 1) || j > (width - 1))
-        return 0;
-
-    if(tab[i][j] == 1)
-        return 1;
-    return 0;
- }
-
- int count_neighbours(int **tab, int i, int j)
- {
-    int count = 0;
-
-    count += alive(tab, i + 1, j);
-    count += alive(tab, i - 1, j);
-    count += alive(tab, i, j + 1);
-    count += alive(tab, i, j - 1);
-    count += alive(tab, i + 1, j - 1);
-    count += alive(tab, i + 1, j + 1);
-    count += alive(tab, i - 1, j + 1);
-    count += alive(tab, i - 1, j - 1);
-
-    return count;
- }
-
- void read_input(int **table)
- {
+void read_input(int **tab)
+{
+    int readed = 0;
+    char c = 0;
     int i = 0;
     int j = 0;
-    char c = 0;
-    int readed = 0;
     int pen = 0;
-    while((readed = read(0, &c, 1)) > 0)
+    while((readed = read(0, &c, 1) > 0))
     {
         if(c == 'w' && i > 0)
             i--;
-        if(c == 's' && i < height)
+        if(c == 's' && i < h - 1)
             i++;
-        if(c == 'd' && j < width)
-            j++;
         if(c == 'a' && j > 0)
             j--;
+        if(c == 'd' && j < w - 1)
+            j++;
         if(c == 'x')
             pen = !pen;
         if(pen)
-        table[i][j] = pen;
+            tab[i][j] = pen;
     }
- }
+}
 
- void update_world(int **tab, int **temp)
- {
-    for(int i = 0; i < height; i++)
+int alive(int **tab, int i, int j)
+{
+    if(i < 0 || j < 0)
+        return 0;
+    if(i >= h || j >= w)
+        return 0;
+    if(tab[i][j] == 1)
+        return 1;
+    return 0;
+}
+
+int count_neibours(int **tab, int i, int j)
+{
+    int count = 0;
+
+    count += alive(tab, i - 1, j - 1);
+    count += alive(tab, i - 1, j);
+    count += alive(tab, i - 1, j + 1);
+    count += alive(tab, i, j - 1);
+    count += alive(tab, i, j + 1);
+    count += alive(tab, i + 1, j - 1);
+    count += alive(tab, i + 1, j);
+    count += alive(tab, i + 1, j + 1);
+    return count;
+}
+
+void update_map(int **tab, int **temp)
+{
+    for (int i = 0; i < h; i++)
     {
-        for (int j = 0; j < width; j++)
+        for (int j = 0; j < w; j++)
         {
-            int neibours = count_neighbours(tab, i, j);
+            int count = count_neibours(tab, i, j);
             if(tab[i][j] == 1)
             {
-                if(neibours == 2 || neibours == 3)
-                    temp[i][j] = 1;
-                if (neibours < 2)
-                    temp[i][j] = 0;
-            }
-            if(tab[i][j] == 0)
-            {
-                if(neibours == 3)
+                if(count == 2 || count == 3)
                     temp[i][j] = 1;
                 else
                     temp[i][j] = 0;
             }
-        }      
+            else if(tab[i][j] == 0)
+            {
+                if(count == 3)
+                    temp[i][j] = 1;
+                else
+                    temp[i][j] = 0;
+            }
+        }
+        
     }
- }
+    
+}
 
- 
+void print_map(int **tab)
+{
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if(tab[i][j] == 1)
+                putchar('O');
+            else
+                putchar(' ');
+        }
+        putchar('\n');
+    }
+}
 
- int main(int argc, char**argv)
- {
+void free_tab(int **tab)
+{
+    for (int i = 0; i < h; i++)
+    {
+        free(tab[i]);
+    }
+    free(tab);
+}
+
+int main(int argc, char **argv)
+{
     if(argc != 4)
         return 1;
-
-    height = atoi(argv[1]);
-    width = atoi(argv[2]);
-    n_iteration = atoi(argv[2]);
-    int **tab = create_map();
-    int **temp = create_map();
-
-    if(height < 0 || width < 0 || n_iteration < 0)
-        return 1;
-    
+    w = atoi(argv[1]);
+    h = atoi(argv[2]);
+    n_iteration = atoi(argv[3]);
+    int **tab = ft_alloc();
+    int **temp = ft_alloc();
     read_input(tab);
-    ft_print_tab(tab);
-    for(int i = 1; i <= n_iteration; i++)
+    for(int i = 0; i < n_iteration; i++)
     {
-        update_world(tab, temp);
+        update_map(tab, temp);
         int **swp = tab;
         tab = temp;
         temp = swp;
     }
-    ft_print(tab);
+    print_map(tab);
+    free_tab(tab);
+    free_tab(temp);
     return 0;
- }
+}
