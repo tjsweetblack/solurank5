@@ -44,9 +44,9 @@ void    read_rules(int **table)
     {
         if (chr == 'w' && y > 0)
             y--;
-        if (chr == 's' && y < heigth)
+        if (chr == 's' && y < heigth - 1)
             y++;
-        if (chr == 'd' && x < width)
+        if (chr == 'd' && x < width - 1)
             x++;
         if (chr == 'a' && x > 0)
             x--;
@@ -54,6 +54,7 @@ void    read_rules(int **table)
             pen = !pen;
         if (pen)
             table[y][x] = pen;
+        
     }
 }
 

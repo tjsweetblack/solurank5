@@ -1,14 +1,13 @@
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 
+int h;
+int w;
 char **map;
-int height;
-int width;
-char empty, obs, full;
+char emp, obs, full;
 
-
-void error()
+void errorr()
 {
     fprintf(stderr, "map error\n");
 }
@@ -16,121 +15,145 @@ void error()
 int min(int a, int b, int c)
 {
     int min = a;
-    if(b < a)
+    if(min > b)
         min = b;
-    if(c < b)
+    if(min > c)
         min = c;
-    if(a < c)
-        min = a;
     return min;
 }
 
-int read_file(FILE* file)
+void solve()
 {
-    int readed = fscanf(file, "%d %c %c %c", &height, &empty, &obs, &full);
-    map = malloc(sizeof(char*)*height);
-    size_t cap = 0;
-    char *line2 = NULL;
-    
-    getline(&line2, &cap, file);
-    //free(line);
-    
-    for(int i = 0; i < height; i++)
+    int **dp = malloc(sizeof(int *) * h);
+    if(!dp)
     {
-        char *line = NULL;
-        size_t len = getline(&line, &cap, file);
-        if (len == -1)
-        return 1;
-        
-        map[i] = line;
-        width = len;
+        errorr();
+        return ;
     }
-    for (int i = 0; i < height; i++)
+    for (int i = 0; i < h; i++)
     {
-        //printf("%s",map[i]);
-    }
-    
-    return 0;
-}
-
-int solve()
-{
-    int size = 0;
-    int col = 0;
-    int row = 0;
-    int **dp = malloc(sizeof(int*)*height);
-    for(int i = 0; i < height; i++)
-        dp[i] = calloc(width, sizeof(int));
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
+        dp[i] = calloc(w, sizeof(int));
+        if(!dp[i])
         {
-            if(map[i][j] == obs)
-                dp[i][j] = 0;
-            if(i == 0 || j == 0)
-                dp[i][j] = 1;
-            else if(map[i][j] == empty)
-                dp[i][j] = min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1;
-            
-            if(dp[i][j] > size)
-            {
-                size = dp[i][j];
-                col = i - size + 1;
-                row = j - size + 1;
-            }
+            errorr();
+            return ;
         }
     }
-    for(int i = col; i < col + size; i++)
-        for(int j = row; j < row + size; j++)
+    int size = 0;
+    int y = 0;
+    int x = 0;
+
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            if(map[i][j] != emp && map[i][j] != obs)
+            {
+                errorr();
+                return ;
+            }
+            if(map[i][j] == obs)
+                dp[i][j] = 0;
+            else if(i == 0 || j == 0)
+                dp[i][j] = 1;
+            else
+                dp[i][j] = min(dp[i - 1][j], dp[i - 1][j - 1], dp[i][j - 1]) + 1;
+            
+            if(size < dp[i][j])
+            {
+                size = dp[i][j];
+                y = i - size + 1;
+                x = j - size + 1;
+            }
+        }
+        
+    }
+
+    for(int i = y; i < y + size; i++)
+        for(int j = x; j < x + size; j++)
             map[i][j] = full;
+
+    for(int i = 0; i < h; i++)
+        fprintf(stdout, "%s\n", map[i]);
+
+    for (int i = 0; i < h; i++)
+    {
+        free(dp[i]);
+        free(map[i]);
+    }
+    free(dp);
+    free(map);
     
-    for(int i = 0; i < height; i++)
-        printf("%s", map[i]);
-
-    // for (int i = 0;i < height; i++)
-	// {
-	// 	free(dp[i]);
-	// 	free(map[i]);
-	// }
-	// free(dp);
-	// free(map);
-    return 0;
-
 }
 
-void	processar(FILE *f, int multiplos)
+int read_file(FILE *file)
 {
-	if (!read_file(f))
-		solve();
-	else
-		error();
-	if (multiplos)
-		printf("\n");
+    int readed = fscanf(file, "%d %c %c %c", &h, &emp, &obs, &full);
+    if(readed != 4 || h <= 0 || emp == obs || obs == full || emp == full)
+    {
+        return 1;
+    }   
+    map = malloc(sizeof(char *) * h);
+    if(!map)
+    {
+        return 1;
+    }
+    size_t cap = 0;
+    int readed2 = 0;
+    int readed3 = 0;
+    char *line = NULL;
+    getline(&line, &cap, file);
+    free(line);
+    for (int i = 0; i < h; i++)
+    {
+        char *line2 = NULL;
+        readed2 = getline(&line2, &cap, file);
+        if(i == 0)
+            readed3 = readed2;
+        if(readed2 != readed3 || readed2 <= 0)
+            return 1;
+        if(line2[readed3 - 1] == '\n')
+            line2[readed3 - 1] = '\0';
+        else
+             return 1;
+        map[i] = line2;
+    }
+    w = readed3 - 1;
+    if(w <= 0)
+        return 1;
+     return 0;
 }
 
-int	main(int ac, char **av)
+void process(FILE *file, int multi)
 {
-	FILE	*f;
+    if(!read_file(file))
+        solve();
+    else
+        errorr();
 
-	if (ac == 1)
-	{
-		processar(stdin, 0);
-	}
-	else
-	{
-		for (int i = 1; i < ac; i++)
-		{
-			f = fopen(av[i], "r");
-			if (!f)
-			{
-				error();
-				if (ac > 2)
-					printf("\n");
-				continue ;
-			}
-			processar(f, ac > 2);
-			fclose(f);
-		}
-	}
-	return (0);
+    if(multi)
+        fprintf(stdout, "\n");
+}
+int main(int argc, char **argv)
+{
+    if(argc == 1)
+    {
+        process(stdin, 0);
+    }
+    else
+    {
+        for(int i = 1; i < argc; i++)
+        {
+            FILE *file = fopen(argv[i], "r");
+            if(!file)
+            {
+                errorr();
+                if(argc > 2)
+                    fprintf(stdout, "\n");
+                continue;
+            }
+            process(file, argc > 2);
+            fclose(file);
+        }
+    }
 }
